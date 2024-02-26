@@ -1,3 +1,5 @@
+import { TIssue } from "@plane/types";
+
 export interface IQuickActionProps {
   issue: TIssue;
   handleDelete: () => Promise<void>;
@@ -5,4 +7,5 @@ export interface IQuickActionProps {
   handleRemoveFromView?: () => Promise<void>;
   customActionButton?: React.ReactElement;
   portalElement?: HTMLDivElement | null;
+  readOnly?: boolean;
 }

@@ -8,7 +8,7 @@ import { mutate } from "swr";
 import { Check, ChevronDown, CircleUserRound, LogOut, Mails, PlusSquare, Settings, UserCircle2 } from "lucide-react";
 import { usePopper } from "react-popper";
 // hooks
-import { useApplication, useUser, useWorkspace } from "hooks/store";
+import { useApplication, useEventTracker, useUser, useWorkspace } from "hooks/store";
 // hooks
 import useToast from "hooks/use-toast";
 // ui
@@ -54,9 +54,9 @@ export const WorkspaceSidebarDropdown = observer(() => {
   const { workspaceSlug } = router.query;
   // store hooks
   const {
-    theme: { sidebarCollapsed, toggleSidebar },
-    eventTracker: { setTrackElement },
+    theme: { sidebarCollapsed, toggleMobileSidebar },
   } = useApplication();
+  const { setTrackElement } = useEventTracker();
   const { currentUser, updateCurrentUser, isUserInstanceAdmin, signOut } = useUser();
   const { currentWorkspace: activeWorkspace, workspaces } = useWorkspace();
   // hooks
@@ -98,7 +98,7 @@ export const WorkspaceSidebarDropdown = observer(() => {
   };
   const handleItemClick = () => {
     if (window.innerWidth < 768) {
-      toggleSidebar();
+      toggleMobileSidebar();
     }
   };
   const workspacesList = Object.values(workspaces ?? {});
@@ -217,7 +217,6 @@ export const WorkspaceSidebarDropdown = observer(() => {
                   <div className="flex w-full flex-col items-start justify-start gap-2 px-4 py-2 text-sm">
                     <Link
                       href="/create-workspace"
-                      onClick={() => setTrackElement("APP_SIDEBAR_WORKSPACE_DROPDOWN")}
                       className="w-full"
                     >
                       <Menu.Item

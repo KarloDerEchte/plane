@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { CustomMenu } from "@plane/ui";
 import { Copy, Link, Pencil, Trash2 } from "lucide-react";
+import omit from "lodash/omit";
 // hooks
-import { useUser } from "hooks/store";
+import { useEventTracker, useIssues, useUser } from "hooks/store";
 import useToast from "hooks/use-toast";
 // components
 import { CreateUpdateIssueModal, DeleteIssueModal } from "components/issues";
@@ -17,7 +18,7 @@ import { EUserProjectRoles } from "constants/project";
 import { EIssuesStoreType } from "constants/issue";
 
 export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => {
-  const { issue, handleDelete, handleUpdate, customActionButton, portalElement } = props;
+  const { issue, handleDelete, handleUpdate, customActionButton, portalElement, readOnly = false } = props;
   // router
   const router = useRouter();
   const { workspaceSlug } = router.query;
@@ -29,13 +30,17 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
   const {
     membership: { currentProjectRole },
   } = useUser();
+  const { setTrackElement } = useEventTracker();
+  const { issuesFilter } = useIssues(EIssuesStoreType.PROJECT);
+
+  const activeLayout = `${issuesFilter.issueFilters?.displayFilters?.layout} layout`;
 
   const isEditingAllowed = !!currentProjectRole && currentProjectRole >= EUserProjectRoles.MEMBER;
 
   const { setToastAlert } = useToast();
 
   const handleCopyIssueLink = () => {
-    copyUrlToClipboard(`${workspaceSlug}/projects/${issue.project}/issues/${issue.id}`).then(() =>
+    copyUrlToClipboard(`${workspaceSlug}/projects/${issue.project_id}/issues/${issue.id}`).then(() =>
       setToastAlert({
         type: "success",
         title: "Link copied",
@@ -44,11 +49,15 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
     );
   };
 
-  const duplicateIssuePayload = {
-    ...issue,
-    name: `${issue.name} (copy)`,
-  };
-  delete duplicateIssuePayload.id;
+  const duplicateIssuePayload = omit(
+    {
+      ...issue,
+      name: `${issue.name} (copy)`,
+    },
+    ["id"]
+  );
+
+  const isDraftIssue = router?.asPath?.includes("draft-issues") || false;
 
   return (
     <>
@@ -58,6 +67,7 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
         handleClose={() => setDeleteIssueModal(false)}
         onSubmit={handleDelete}
       />
+
       <CreateUpdateIssueModal
         isOpen={createUpdateIssueModal}
         onClose={() => {
@@ -69,7 +79,9 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
           if (issueToEdit && handleUpdate) await handleUpdate({ ...issueToEdit, ...data });
         }}
         storeType={EIssuesStoreType.PROJECT}
+        isDraft={isDraftIssue}
       />
+
       <CustomMenu
         placement="bottom-start"
         customButton={customActionButton}
@@ -87,10 +99,11 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
             Copy link
           </div>
         </CustomMenu.MenuItem>
-        {isEditingAllowed && (
+        {isEditingAllowed && !readOnly && (
           <>
             <CustomMenu.MenuItem
               onClick={() => {
+                setTrackElement(activeLayout);
                 setIssueToEdit(issue);
                 setCreateUpdateIssueModal(true);
               }}
@@ -102,6 +115,7 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
             </CustomMenu.MenuItem>
             <CustomMenu.MenuItem
               onClick={() => {
+                setTrackElement(activeLayout);
                 setCreateUpdateIssueModal(true);
               }}
             >
@@ -112,6 +126,7 @@ export const ProjectIssueQuickActions: React.FC<IQuickActionProps> = (props) => 
             </CustomMenu.MenuItem>
             <CustomMenu.MenuItem
               onClick={() => {
+                setTrackElement(activeLayout);
                 setDeleteIssueModal(true);
               }}
             >

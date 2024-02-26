@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { CustomMenu } from "@plane/ui";
 import { Copy, Link, Pencil, Trash2 } from "lucide-react";
+import omit from "lodash/omit";
 // hooks
 import useToast from "hooks/use-toast";
+import { useEventTracker } from "hooks/store";
 // components
 import { CreateUpdateIssueModal, DeleteIssueModal } from "components/issues";
 // helpers
@@ -15,7 +17,7 @@ import { IQuickActionProps } from "../list/list-view-types";
 import { EIssuesStoreType } from "constants/issue";
 
 export const AllIssueQuickActions: React.FC<IQuickActionProps> = (props) => {
-  const { issue, handleDelete, handleUpdate, customActionButton, portalElement } = props;
+  const { issue, handleDelete, handleUpdate, customActionButton, portalElement, readOnly = false } = props;
   // states
   const [createUpdateIssueModal, setCreateUpdateIssueModal] = useState(false);
   const [issueToEdit, setIssueToEdit] = useState<TIssue | undefined>(undefined);
@@ -23,11 +25,13 @@ export const AllIssueQuickActions: React.FC<IQuickActionProps> = (props) => {
   // router
   const router = useRouter();
   const { workspaceSlug } = router.query;
+  // hooks
+  const { setTrackElement } = useEventTracker();
   // toast alert
   const { setToastAlert } = useToast();
 
   const handleCopyIssueLink = () => {
-    copyUrlToClipboard(`/${workspaceSlug}/projects/${issue.project}/issues/${issue.id}`).then(() =>
+    copyUrlToClipboard(`/${workspaceSlug}/projects/${issue.project_id}/issues/${issue.id}`).then(() =>
       setToastAlert({
         type: "success",
         title: "Link copied",
@@ -36,11 +40,13 @@ export const AllIssueQuickActions: React.FC<IQuickActionProps> = (props) => {
     );
   };
 
-  const duplicateIssuePayload = {
-    ...issue,
-    name: `${issue.name} (copy)`,
-  };
-  delete duplicateIssuePayload.id;
+  const duplicateIssuePayload = omit(
+    {
+      ...issue,
+      name: `${issue.name} (copy)`,
+    },
+    ["id"]
+  );
 
   return (
     <>
@@ -79,37 +85,44 @@ export const AllIssueQuickActions: React.FC<IQuickActionProps> = (props) => {
             Copy link
           </div>
         </CustomMenu.MenuItem>
-        <CustomMenu.MenuItem
-          onClick={() => {
-            setIssueToEdit(issue);
-            setCreateUpdateIssueModal(true);
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Pencil className="h-3 w-3" />
-            Edit issue
-          </div>
-        </CustomMenu.MenuItem>
-        <CustomMenu.MenuItem
-          onClick={() => {
-            setCreateUpdateIssueModal(true);
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Copy className="h-3 w-3" />
-            Make a copy
-          </div>
-        </CustomMenu.MenuItem>
-        <CustomMenu.MenuItem
-          onClick={() => {
-            setDeleteIssueModal(true);
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-3 w-3" />
-            Delete issue
-          </div>
-        </CustomMenu.MenuItem>
+        {!readOnly && (
+          <>
+            <CustomMenu.MenuItem
+              onClick={() => {
+                setTrackElement("Global issues");
+                setIssueToEdit(issue);
+                setCreateUpdateIssueModal(true);
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Pencil className="h-3 w-3" />
+                Edit issue
+              </div>
+            </CustomMenu.MenuItem>
+            <CustomMenu.MenuItem
+              onClick={() => {
+                setTrackElement("Global issues");
+                setCreateUpdateIssueModal(true);
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Copy className="h-3 w-3" />
+                Make a copy
+              </div>
+            </CustomMenu.MenuItem>
+            <CustomMenu.MenuItem
+              onClick={() => {
+                setTrackElement("Global issues");
+                setDeleteIssueModal(true);
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-3 w-3" />
+                Delete issue
+              </div>
+            </CustomMenu.MenuItem>
+          </>
+        )}
       </CustomMenu>
     </>
   );

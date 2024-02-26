@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { Combobox } from "@headlessui/react";
 import { usePopper } from "react-popper";
@@ -32,6 +32,7 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
     hideIcon = false,
     multiple,
     onChange,
+    onClose,
     placeholder = "Members",
     placement,
     showTooltip = false,
@@ -43,6 +44,7 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
   const [isOpen, setIsOpen] = useState<boolean>(false);
   // refs
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   // popper-js refs
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
@@ -90,17 +92,13 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
   };
   if (multiple) comboboxProps.multiple = true;
 
-  const onOpen = () => {
-    if (referenceElement) referenceElement.focus();
-  };
-
   const handleClose = () => {
-    if (isOpen) setIsOpen(false);
-    if (referenceElement) referenceElement.blur();
+    if (!isOpen) return;
+    setIsOpen(false);
+    onClose && onClose();
   };
 
   const toggleDropdown = () => {
-    if (!isOpen) onOpen();
     setIsOpen((prevIsOpen) => !prevIsOpen);
   };
 
@@ -119,6 +117,12 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
 
   useOutsideClickDetector(dropdownRef, handleClose);
 
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
   return (
     <Combobox
       as="div"
@@ -134,7 +138,7 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
           <button
             ref={setReferenceElement}
             type="button"
-            className={cn("block h-full w-full outline-none", buttonContainerClassName)}
+            className={cn("clickable block h-full w-full outline-none", buttonContainerClassName)}
             onClick={handleOnClick}
           >
             {button}
@@ -144,7 +148,7 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
             ref={setReferenceElement}
             type="button"
             className={cn(
-              "block h-full max-w-full outline-none",
+              "clickable block h-full max-w-full outline-none",
               {
                 "cursor-not-allowed text-custom-text-200": disabled,
                 "cursor-pointer": !disabled,
@@ -189,6 +193,8 @@ export const WorkspaceMemberDropdown: React.FC<MemberDropdownProps> = observer((
             <div className="flex items-center gap-1.5 rounded border border-custom-border-100 bg-custom-background-90 px-2">
               <Search className="h-3.5 w-3.5 text-custom-text-400" strokeWidth={1.5} />
               <Combobox.Input
+                as="input"
+                ref={inputRef}
                 className="w-full bg-transparent py-1 text-xs text-custom-text-200 placeholder:text-custom-text-400 focus:outline-none"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
