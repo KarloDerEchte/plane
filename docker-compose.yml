@@ -58,6 +58,24 @@ services:
       - api
       - plane-db
       - plane-redis
+      
+  migrator:
+    build:
+      context: ./apiserver
+      dockerfile: Dockerfile.dev
+      args:
+        DOCKER_BUILDKIT: 1
+    restart: "no"
+    volumes:
+      - ./apiserver:/code
+    command: >
+        sh -c "python manage.py wait_for_db --settings=plane.settings.local &&
+             python manage.py migrate --settings=plane.settings.local"
+    env_file:
+      - ./apiserver/.env
+    depends_on:
+      - plane-db
+      - plane-redis
 
   beat-worker:
     container_name: beatworker
