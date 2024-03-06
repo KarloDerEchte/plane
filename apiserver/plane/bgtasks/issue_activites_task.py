@@ -353,12 +353,17 @@ def track_assignees(
     issue_activities,
     epoch,
 ):
-    requested_assignees = set(
-        [str(asg) for asg in requested_data.get("assignee_ids", [])]
+    requested_assignees = (
+        set([str(asg) for asg in requested_data.get("assignee_ids", [])])
+        if requested_data is not None
+        else set()
     )
-    current_assignees = set(
-        [str(asg) for asg in current_instance.get("assignee_ids", [])]
+    current_assignees = (
+        set([str(asg) for asg in current_instance.get("assignee_ids", [])])
+        if current_instance is not None
+        else set()
     )
+
 
     added_assignees = requested_assignees - current_assignees
     dropped_assginees = current_assignees - requested_assignees
@@ -478,17 +483,23 @@ def track_archive_at(
                 )
             )
         else:
+            if requested_data.get("automation"):
+                comment = "Plane has archived the issue"
+                new_value = "archive"
+            else:
+                comment = "Actor has archived the issue"
+                new_value = "manual_archive"
             issue_activities.append(
                 IssueActivity(
                     issue_id=issue_id,
                     project_id=project_id,
                     workspace_id=workspace_id,
-                    comment="Plane has archived the issue",
+                    comment=comment,
                     verb="updated",
                     actor_id=actor_id,
                     field="archived_at",
                     old_value=None,
-                    new_value="archive",
+                    new_value=new_value,
                     epoch=epoch,
                 )
             )
@@ -547,6 +558,20 @@ def create_issue_activity(
             epoch=epoch,
         )
     )
+    requested_data = (
+        json.loads(requested_data) if requested_data is not None else None
+    )
+    if requested_data.get("assignee_ids") is not None:
+        track_assignees(
+            requested_data,
+            current_instance,
+            issue_id,
+            project_id,
+            workspace_id,
+            actor_id,
+            issue_activities,
+            epoch,
+        )
 
 
 def update_issue_activity(

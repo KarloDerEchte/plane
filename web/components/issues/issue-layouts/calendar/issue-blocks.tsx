@@ -17,15 +17,16 @@ type Props = {
   issueIdList: string[] | null;
   quickActions: (issue: TIssue, customActionButton?: React.ReactElement) => React.ReactNode;
   showAllIssues?: boolean;
+  isDragDisabled?: boolean;
 };
 
 export const CalendarIssueBlocks: React.FC<Props> = observer((props) => {
-  const { issues, issueIdList, quickActions, showAllIssues = false } = props;
+  const { issues, issueIdList, quickActions, showAllIssues = false, isDragDisabled = false } = props;
   // hooks
   const {
     router: { workspaceSlug, projectId },
   } = useApplication();
-  const { getProjectById } = useProject();
+  const { getProjectIdentifierById } = useProject();
   const { getProjectStates } = useProjectState();
   const { peekIssue, setPeekIssue } = useIssueDetail();
   // states
@@ -65,7 +66,7 @@ export const CalendarIssueBlocks: React.FC<Props> = observer((props) => {
           getProjectStates(issue?.project_id)?.find((state) => state?.id == issue?.state_id)?.color || "";
 
         return (
-          <Draggable key={issue.id} draggableId={issue.id} index={index}>
+          <Draggable key={issue.id} draggableId={issue.id} index={index} isDragDisabled={isDragDisabled}>
             {(provided, snapshot) => (
               <div
                 className="relative cursor-pointer p-1 px-2"
@@ -78,6 +79,7 @@ export const CalendarIssueBlocks: React.FC<Props> = observer((props) => {
                   target="_blank"
                   onClick={() => handleIssuePeekOverview(issue)}
                   className="w-full line-clamp-1 cursor-pointer text-sm text-custom-text-100"
+                  disabled={!!issue?.tempId}
                 >
                   <>
                     {issue?.tempId !== undefined && (
@@ -106,9 +108,9 @@ export const CalendarIssueBlocks: React.FC<Props> = observer((props) => {
                           }}
                         />
                         <div className="flex-shrink-0 text-xs text-custom-text-300">
-                          {getProjectById(issue?.project_id)?.identifier}-{issue.sequence_id}
+                          {getProjectIdentifierById(issue?.project_id)}-{issue.sequence_id}
                         </div>
-                        <Tooltip tooltipHeading="Title" tooltipContent={issue.name}>
+                        <Tooltip tooltipContent={issue.name}>
                           <div className="truncate text-xs">{issue.name}</div>
                         </Tooltip>
                       </div>

@@ -26,12 +26,23 @@ interface IBaseSpreadsheetRoot {
     [EIssueActions.DELETE]: (issue: TIssue) => void;
     [EIssueActions.UPDATE]?: (issue: TIssue) => void;
     [EIssueActions.REMOVE]?: (issue: TIssue) => void;
+    [EIssueActions.ARCHIVE]?: (issue: TIssue) => void;
+    [EIssueActions.RESTORE]?: (issue: TIssue) => Promise<void>;
   };
   canEditPropertiesBasedOnProject?: (projectId: string) => boolean;
+  isCompletedCycle?: boolean;
 }
 
 export const BaseSpreadsheetRoot = observer((props: IBaseSpreadsheetRoot) => {
-  const { issueFiltersStore, issueStore, viewId, QuickActions, issueActions, canEditPropertiesBasedOnProject } = props;
+  const {
+    issueFiltersStore,
+    issueStore,
+    viewId,
+    QuickActions,
+    issueActions,
+    canEditPropertiesBasedOnProject,
+    isCompletedCycle = false,
+  } = props;
   // router
   const router = useRouter();
   const { workspaceSlug, projectId } = router.query as { workspaceSlug: string; projectId: string };
@@ -79,7 +90,7 @@ export const BaseSpreadsheetRoot = observer((props: IBaseSpreadsheetRoot) => {
         viewId
       );
     },
-    [issueFiltersStore, projectId, workspaceSlug, viewId]
+    [issueFiltersStore?.updateFilters, projectId, workspaceSlug, viewId]
   );
 
   const renderQuickActions = useCallback(
@@ -94,7 +105,14 @@ export const BaseSpreadsheetRoot = observer((props: IBaseSpreadsheetRoot) => {
         handleRemoveFromView={
           issueActions[EIssueActions.REMOVE] ? async () => handleIssues(issue, EIssueActions.REMOVE) : undefined
         }
+        handleArchive={
+          issueActions[EIssueActions.ARCHIVE] ? async () => handleIssues(issue, EIssueActions.ARCHIVE) : undefined
+        }
+        handleRestore={
+          issueActions[EIssueActions.RESTORE] ? async () => handleIssues(issue, EIssueActions.RESTORE) : undefined
+        }
         portalElement={portalElement}
+        readOnly={!isEditingAllowed || isCompletedCycle}
       />
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,7 +131,7 @@ export const BaseSpreadsheetRoot = observer((props: IBaseSpreadsheetRoot) => {
       quickAddCallback={issueStore.quickAddIssue}
       viewId={viewId}
       enableQuickCreateIssue={enableQuickAdd}
-      disableIssueCreation={!enableIssueCreation || !isEditingAllowed}
+      disableIssueCreation={!enableIssueCreation || !isEditingAllowed || isCompletedCycle}
     />
   );
 });

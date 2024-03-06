@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useRef, useState } from "react";
+import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import { Combobox } from "@headlessui/react";
 import { usePopper } from "react-popper";
 import { Check, ChevronDown, Search } from "lucide-react";
@@ -23,6 +23,7 @@ type Props = TDropdownProps & {
   dropdownArrowClassName?: string;
   highlightUrgent?: boolean;
   onChange: (val: TIssuePriorities) => void;
+  onClose?: () => void;
   value: TIssuePriorities;
 };
 
@@ -57,7 +58,7 @@ const BorderButton = (props: ButtonProps) => {
     high: "bg-orange-500/20 text-orange-950 border-orange-500",
     medium: "bg-yellow-500/20 text-yellow-950 border-yellow-500",
     low: "bg-custom-primary-100/20 text-custom-primary-950 border-custom-primary-100",
-    none: "bg-custom-background-80 border-custom-border-300",
+    none: "hover:bg-custom-background-80 border-custom-border-300",
   };
 
   return (
@@ -196,7 +197,7 @@ const TransparentButton = (props: ButtonProps) => {
     high: "text-orange-950",
     medium: "text-yellow-950",
     low: "text-blue-950",
-    none: "",
+    none: "hover:text-custom-text-300",
   };
 
   return (
@@ -260,6 +261,7 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
     hideIcon = false,
     highlightUrgent = true,
     onChange,
+    onClose,
     placement,
     showTooltip = false,
     tabIndex,
@@ -270,6 +272,7 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
   const [isOpen, setIsOpen] = useState(false);
   // refs
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   // popper-js refs
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
@@ -303,18 +306,15 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
   const filteredOptions =
     query === "" ? options : options.filter((o) => o.query.toLowerCase().includes(query.toLowerCase()));
 
-  const onOpen = () => {
-    if (referenceElement) referenceElement.focus();
-  };
-
   const handleClose = () => {
-    if (isOpen) setIsOpen(false);
-    if (referenceElement) referenceElement.blur();
+    if (!isOpen) return;
+    setIsOpen(false);
+    onClose && onClose();
   };
 
   const toggleDropdown = () => {
-    if (!isOpen) onOpen();
     setIsOpen((prevIsOpen) => !prevIsOpen);
+    if (isOpen) onClose && onClose();
   };
 
   const dropdownOnChange = (val: TIssuePriorities) => {
@@ -330,6 +330,13 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
     toggleDropdown();
   };
 
+  const searchInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (query !== "" && e.key === "Escape") {
+      e.stopPropagation();
+      setQuery("");
+    }
+  };
+
   useOutsideClickDetector(dropdownRef, handleClose);
 
   const ButtonToRender = BORDER_BUTTON_VARIANTS.includes(buttonVariant)
@@ -337,6 +344,12 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
     : BACKGROUND_BUTTON_VARIANTS.includes(buttonVariant)
     ? BackgroundButton
     : TransparentButton;
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
 
   return (
     <Combobox
@@ -360,7 +373,7 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
           <button
             ref={setReferenceElement}
             type="button"
-            className={cn("block h-full w-full outline-none", buttonContainerClassName)}
+            className={cn("clickable block h-full w-full outline-none", buttonContainerClassName)}
             onClick={handleOnClick}
           >
             {button}
@@ -370,7 +383,7 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
             ref={setReferenceElement}
             type="button"
             className={cn(
-              "block h-full max-w-full outline-none",
+              "clickable block h-full max-w-full outline-none",
               {
                 "cursor-not-allowed text-custom-text-200": disabled,
                 "cursor-pointer": !disabled,
@@ -405,11 +418,14 @@ export const PriorityDropdown: React.FC<Props> = (props) => {
             <div className="flex items-center gap-1.5 rounded border border-custom-border-100 bg-custom-background-90 px-2">
               <Search className="h-3.5 w-3.5 text-custom-text-400" strokeWidth={1.5} />
               <Combobox.Input
+                as="input"
+                ref={inputRef}
                 className="w-full bg-transparent py-1 text-xs text-custom-text-200 placeholder:text-custom-text-400 focus:outline-none"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search"
                 displayValue={(assigned: any) => assigned?.name}
+                onKeyDown={searchInputKeyDown}
               />
             </div>
             <div className="mt-2 max-h-48 space-y-1 overflow-y-scroll">

@@ -34,7 +34,8 @@ import { ICycle, TCycleGroups } from "@plane/types";
 // constants
 import { EIssuesStoreType } from "constants/issue";
 import { CYCLE_ISSUES_WITH_PARAMS } from "constants/fetch-keys";
-import { CYCLE_EMPTY_STATE_DETAILS, CYCLE_STATE_GROUPS_DETAILS } from "constants/cycle";
+import { CYCLE_STATE_GROUPS_DETAILS } from "constants/cycle";
+import { CYCLE_EMPTY_STATE_DETAILS } from "constants/empty-state";
 
 interface IActiveCycleDetails {
   workspaceSlug: string;
@@ -68,7 +69,7 @@ export const ActiveCycleDetails: React.FC<IActiveCycleDetails> = observer((props
   );
 
   const activeCycle = currentProjectActiveCycleId ? getActiveCycleById(currentProjectActiveCycleId) : null;
-  const cycleOwnerDetails = activeCycle ? getUserDetails(activeCycle.owned_by) : undefined;
+  const cycleOwnerDetails = activeCycle ? getUserDetails(activeCycle.owned_by_id) : undefined;
 
   const { data: activeCycleIssues } = useSWR(
     workspaceSlug && projectId && currentProjectActiveCycleId
@@ -150,7 +151,7 @@ export const ActiveCycleDetails: React.FC<IActiveCycleDetails> = observer((props
     color: group.color,
   }));
 
-  const daysLeft = findHowManyDaysLeft(activeCycle.end_date ?? new Date());
+  const daysLeft = findHowManyDaysLeft(activeCycle.end_date) ?? 0;
 
   return (
     <div className="grid-row-2 grid divide-y rounded-[10px] border border-custom-border-200 bg-custom-background-100 shadow">
@@ -221,12 +222,13 @@ export const ActiveCycleDetails: React.FC<IActiveCycleDetails> = observer((props
                   <span className="text-custom-text-200">{cycleOwnerDetails?.display_name}</span>
                 </div>
 
-                {activeCycle.assignees.length > 0 && (
+                {activeCycle.assignee_ids.length > 0 && (
                   <div className="flex items-center gap-1 text-custom-text-200">
                     <AvatarGroup>
-                      {activeCycle.assignees.map((assignee) => (
-                        <Avatar key={assignee.id} name={assignee.display_name} src={assignee.avatar} />
-                      ))}
+                      {activeCycle.assignee_ids.map((assigne_id) => {
+                        const member = getUserDetails(assigne_id);
+                        return <Avatar key={member?.id} name={member?.display_name} src={member?.avatar} />;
+                      })}
                     </AvatarGroup>
                   </div>
                 )}
@@ -309,7 +311,7 @@ export const ActiveCycleDetails: React.FC<IActiveCycleDetails> = observer((props
                           {currentProjectDetails?.identifier}-{issue.sequence_id}
                         </span>
                       </Tooltip>
-                      <Tooltip position="top-left" tooltipHeading="Title" tooltipContent={issue.name}>
+                      <Tooltip position="top-left" tooltipContent={issue.name}>
                         <span className="text-[0.825rem] text-custom-text-100">{truncateText(issue.name, 30)}</span>
                       </Tooltip>
                     </div>

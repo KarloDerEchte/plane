@@ -1,3 +1,4 @@
+import { MutableRefObject } from "react";
 import { Droppable } from "@hello-pangea/dnd";
 // hooks
 import { useProjectState } from "hooks/store";
@@ -37,6 +38,8 @@ interface IKanbanGroup {
   disableIssueCreation?: boolean;
   canEditProperties: (projectId: string | undefined) => boolean;
   groupByVisibilityToggle: boolean;
+  scrollableContainerRef?: MutableRefObject<HTMLDivElement | null>;
+  isDragStarted?: boolean;
 }
 
 export const KanbanGroup = (props: IKanbanGroup) => {
@@ -57,6 +60,8 @@ export const KanbanGroup = (props: IKanbanGroup) => {
     disableIssueCreation,
     quickAddCallback,
     viewId,
+    scrollableContainerRef,
+    isDragStarted,
   } = props;
   // hooks
   const projectState = useProjectState();
@@ -75,6 +80,10 @@ export const KanbanGroup = (props: IKanbanGroup) => {
         preloadedData = { ...preloadedData, state_id: groupValue };
       } else if (groupByKey === "priority") {
         preloadedData = { ...preloadedData, priority: groupValue };
+      } else if (groupByKey === "cycle") {
+        preloadedData = { ...preloadedData, cycle_id: groupValue };
+      } else if (groupByKey === "module") {
+        preloadedData = { ...preloadedData, module_ids: [groupValue] };
       } else if (groupByKey === "labels" && groupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [groupValue] };
       } else if (groupByKey === "assignees" && groupValue != "None") {
@@ -91,6 +100,10 @@ export const KanbanGroup = (props: IKanbanGroup) => {
         preloadedData = { ...preloadedData, state_id: subGroupValue };
       } else if (subGroupByKey === "priority") {
         preloadedData = { ...preloadedData, priority: subGroupValue };
+      } else if (groupByKey === "cycle") {
+        preloadedData = { ...preloadedData, cycle_id: subGroupValue };
+      } else if (groupByKey === "module") {
+        preloadedData = { ...preloadedData, module_ids: [subGroupValue] };
       } else if (subGroupByKey === "labels" && subGroupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [subGroupValue] };
       } else if (subGroupByKey === "assignees" && subGroupValue != "None") {
@@ -110,9 +123,7 @@ export const KanbanGroup = (props: IKanbanGroup) => {
       <Droppable droppableId={`${groupId}__${sub_group_id}`}>
         {(provided: any, snapshot: any) => (
           <div
-            className={`relative h-full w-full transition-all ${
-              snapshot.isDraggingOver ? `bg-custom-background-80` : ``
-            }`}
+            className={`relative h-full transition-all ${snapshot.isDraggingOver ? `bg-custom-background-80` : ``}`}
             {...provided.droppableProps}
             ref={provided.innerRef}
           >
@@ -127,6 +138,8 @@ export const KanbanGroup = (props: IKanbanGroup) => {
               handleIssues={handleIssues}
               quickActions={quickActions}
               canEditProperties={canEditProperties}
+              scrollableContainerRef={scrollableContainerRef}
+              isDragStarted={isDragStarted}
             />
 
             {provided.placeholder}
